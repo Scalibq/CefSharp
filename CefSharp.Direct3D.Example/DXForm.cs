@@ -25,7 +25,7 @@ namespace DirectX
 {
     public partial class DXForm : Form, IRenderHandler, IAudioHandler
     {
-        const bool FULLSCREEN = true;
+        const bool FULLSCREEN = false;
         const bool EXTERNALTRIGGER = true;
         const bool VSYNC = true;
 
@@ -579,7 +579,13 @@ namespace DirectX
                     }
                 }
 
-                swapChain.Present(VSYNC ? 1 : 0, PresentFlags.None);
+                if (VSYNC)
+                {
+                    swapChain.ContainingOutput.WaitForVerticalBlank();
+                    swapChain.Present(1, PresentFlags.None);
+                }
+                else
+                    swapChain.Present(0, PresentFlags.None);
             }
         }
 
