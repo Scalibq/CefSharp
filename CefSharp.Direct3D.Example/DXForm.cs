@@ -32,6 +32,7 @@ namespace DirectX
         D3D11.Device device;
         DeviceMultithread deviceMultithread;
         SwapChain swapChain;
+        Output output;
         RenderTargetView renderTarget;
         Texture2D[] texture = new Texture2D[2];
         ShaderResourceView[] srv = new ShaderResourceView[2];
@@ -146,6 +147,13 @@ namespace DirectX
             if (deviceMultithread != null)
                 deviceMultithread.SetMultithreadProtected(true);
 
+            QueryDescription desc = new QueryDescription()
+            {
+                Type = QueryType.Event,
+                Flags = QueryFlags.None
+            };
+            query = new Query(device, desc);
+
             UpgradeDevice();
 
             using (SharpDX.DXGI.Device dxgiDev = device.QueryInterface<SharpDX.DXGI.Device>())
@@ -158,6 +166,8 @@ namespace DirectX
             UpgradeFactory();
 
             CreateSwapChain(fullscreen);
+
+            output = swapChain.ContainingOutput;
 
             UpgradeSwapChain();
 
@@ -473,6 +483,12 @@ namespace DirectX
                 renderTarget = null;
             }
 
+            if (output != null)
+            {
+                output.Dispose();
+                output = null;
+            }
+
             if (swapChain != null)
             {
                 swapChain.Dispose();
@@ -581,7 +597,7 @@ namespace DirectX
 
                 if (VSYNC)
                 {
-                    swapChain.ContainingOutput.WaitForVerticalBlank();
+                    output.WaitForVerticalBlank();
                     swapChain.Present(1, PresentFlags.None);
                 }
                 else
@@ -774,16 +790,6 @@ namespace DirectX
                         srv[nextTex].Dispose();
 
                     srv[nextTex] = new ShaderResourceView(device, texture[nextTex]);
-                }
-
-                if (query == null)
-                {
-                    QueryDescription desc = new QueryDescription()
-                    {
-                        Type = QueryType.Event,
-                        Flags = QueryFlags.None
-                    };
-                    query = new Query(device, desc);
                 }
 
                 device.ImmediateContext.CopyResource(cefTex11, texture[nextTex]);
